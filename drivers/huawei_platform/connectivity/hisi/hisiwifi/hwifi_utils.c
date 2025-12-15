@@ -98,7 +98,7 @@ struct task_struct *hi110x_thread_create(int (*threadfn)(void *data),
     /* create thread for gpio rx data in interrupt handler*/
     if(sema_sync)
         sema_init(sema_sync, 0);
-    tsk = kthread_run(threadfn, data, name);
+    tsk = kthread_run(threadfn, data, "%s", name);
     if (IS_ERR(tsk))
     {
         HWIFI_ERROR("Failed to run theread:%s", name);
@@ -182,7 +182,7 @@ int32 create_task(struct task_ctrl_struct *task_ctrl,
 {
     init_waitqueue_head(&task_ctrl->wait_queue);
 
-    task_ctrl->task = kthread_run(threadfn, data, name);
+    task_ctrl->task = kthread_run(threadfn, data, "%s", name);
     if (IS_ERR(task_ctrl->task))
     {
         HWIFI_ERROR("create task %s error:%d", name, (int32)PTR_ERR(task_ctrl->task));
@@ -295,5 +295,6 @@ int hi_append_return_addr(char* buf, size_t len, void* ret_ip)
         }
     #endif
 #endif
+
 
 
