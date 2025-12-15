@@ -65,7 +65,7 @@ module_param(loglevel, uint, S_IRUGO|S_IWUSR);
 struct task_struct *hi110x_thread_create(int (*threadfn)(void *data),
                                         void                    *param,
                                         struct semaphore        *sema_sync,
-                                        const char               namefmt[],
+                                        const char              *name,
                                         uint32                   policy,
                                         int32                    prio,
                                         int32                    cpuid)
@@ -85,7 +85,7 @@ struct task_struct *hi110x_thread_create(int (*threadfn)(void *data),
 struct task_struct *hi110x_thread_create(int (*threadfn)(void *data),
                                         void                    *data,
                                         struct semaphore        *sema_sync,
-                                        const char               namefmt[],
+                                        const char              *name,
                                         uint32                   policy,
                                         int32                    prio,
                                         int32                    cpuid)
@@ -98,23 +98,23 @@ struct task_struct *hi110x_thread_create(int (*threadfn)(void *data),
     /* create thread for gpio rx data in interrupt handler*/
     if(sema_sync)
         sema_init(sema_sync, 0);
-    tsk = kthread_run(threadfn, data, namefmt);
+    tsk = kthread_run(threadfn, data, name);
     if (IS_ERR(tsk))
     {
-        HWIFI_ERROR("Failed to run theread:%s", namefmt);
+        HWIFI_ERROR("Failed to run theread:%s", name);
         return NULL;
     }
 
     /* set thread priority and schedule policy */
     param.sched_priority = prio;
     ret = sched_setscheduler(tsk, policy, &param);
-    if(HWIFI_WARN(ret, "%s setscheduler failed! ret=%d ",namefmt , ret))
+    if(HWIFI_WARN(ret, "%s setscheduler failed! ret=%d ",name , ret))
     {
-        HWIFI_WARNING("%s sched_setscheduler failed! ret =%d, prio=%d",namefmt, ret, prio);
+        HWIFI_WARNING("%s sched_setscheduler failed! ret =%d, prio=%d",name, ret, prio);
     }
     if(cpuid >= 0)
     {
-        /*设置线程的cpu绑定*/
+        /*脡猫脰脙脧脽鲁脤碌脛cpu掳贸露篓*/
         ret_bind    = set_cpus_allowed_ptr(tsk, &cpumask_of_cpu(cpuid));
         if (0 == ret_bind)
         {
@@ -123,7 +123,7 @@ struct task_struct *hi110x_thread_create(int (*threadfn)(void *data),
         }
         else
         {
-            HWIFI_ERROR("thread %s can't bind cpuid %d, error code is %d",namefmt, cpuid, ret_bind);
+            HWIFI_ERROR("thread %s can't bind cpuid %d, error code is %d",name, cpuid, ret_bind);
             return NULL;
         }
     }
@@ -295,4 +295,5 @@ int hi_append_return_addr(char* buf, size_t len, void* ret_ip)
         }
     #endif
 #endif
+
 
