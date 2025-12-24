@@ -57,11 +57,11 @@ extern "C" {
 #define OS_KMALLOC_GFP(size)                kmalloc(size, GFP_KERNEL)
 //#define OS_KMALLOC_GFP(size)                kmalloc(size, GFP_ATOMIC)
 
-#define SOH                         0x01       /* ¿ªÊ¼×Ö·û */
-#define EOT                         0x04       /* ·¢ËÍÍê³É */
-#define ACK                         0x06       /* ÕýÈ·½ÓÊÕÓ¦´ð */
-#define NAK                         0x15       /* Ð£Ñé´íÎóÖØÐÂ·¢ËÍ£¬Í¨Ñ¶¿ªÊ¼Ê±ÓÃÓÚ½ÓÊÕ·½Ð­ÉÌÀÛ¼ÓÐ£Ñé */
-#define CAN                         0x18       /* ½áÊøÏÂÔØ */
+#define SOH                         0x01       /* ï¿½ï¿½Ê¼ï¿½Ö·ï¿½ */
+#define EOT                         0x04       /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
+#define ACK                         0x06       /* ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ */
+#define NAK                         0x15       /* Ð£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â·ï¿½ï¿½Í£ï¿½Í¨Ñ¶ï¿½ï¿½Ê¼Ê±ï¿½ï¿½ï¿½Ú½ï¿½ï¿½Õ·ï¿½Ð­ï¿½ï¿½ï¿½Û¼ï¿½Ð£ï¿½ï¿½ */
+#define CAN                         0x18       /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 
 #define PATCH_INTEROP_TIMEOUT        (HZ)
 
@@ -75,7 +75,7 @@ extern "C" {
 #define SDIO_CFG_FILE               "./config/sdio_cfg"
 #else
 #define UART_CFG_FILE               "/system/vendor/firmware/uart_cfg"
-#define SDIO_CFG_FILE               "/system/vendor/firmware/sdio_cfg"
+#define SDIO_CFG_FILE               "/lib/firmware/postmarketos/sdio_cfg"
 #define SDIO_RECOVER_CFG_FILE       "/system/vendor/firmware/sdio_recover_cfg"
 #define SDIO_RECOVER_FLAG_FILE      "/data/hwlogdir/recoverflag"
 #endif
@@ -179,24 +179,24 @@ enum return_type
 
 enum PATCH_INFO_TYPE_ENUM
 {
-    ENUM_INFO_SDIO    =  0,        /* SDIO ½Ó¿ÚÏÂÔØpatch */
-    ENUM_INFO_UART,                /* uart½Ó¿ÚÏÂÔØpatch */
+    ENUM_INFO_SDIO    =  0,        /* SDIO ï¿½Ó¿ï¿½ï¿½ï¿½ï¿½ï¿½patch */
+    ENUM_INFO_UART,                /* uartï¿½Ó¿ï¿½ï¿½ï¿½ï¿½ï¿½patch */
 
-    ENUM_INFO_TOTAL                /* ½Ó¿Ú×ÜÊý */
+    ENUM_INFO_TOTAL                /* ï¿½Ó¿ï¿½ï¿½ï¿½ï¿½ï¿½ */
 
 };
 enum PATCH_CFG_CMD_ENUM
 {
-    ERROR_TYPE_CMD  = 0,           /* ´íÎóµÄÃüÁî */
-    FILE_TYPE_CMD,                 /* ÏÂÔØÅäÖÃÎÄ¼þÃüÁî */
-    NUM_TYPE_CMD,                  /* ÏÂÔØÅäÖÃ²ÎÊýÃüÁî */
-    QUIT_TYPE_CMD                  /* ÍË³öÃüÁî */
+    ERROR_TYPE_CMD  = 0,           /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
+    FILE_TYPE_CMD,                 /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ */
+    NUM_TYPE_CMD,                  /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
+    QUIT_TYPE_CMD                  /* ï¿½Ë³ï¿½ï¿½ï¿½ï¿½ï¿½ */
 };
 
 enum PATCH_WAIT_RESPONSE_ENUM
 {
-    NO_RESPONSE  = 0,               /* ²»µÈ´ýdeviceÏìÓ¦ */
-    WAIT_RESPONSE                   /* µÈ´ýdeviceÏìÓ¦ */
+    NO_RESPONSE  = 0,               /* ï¿½ï¿½ï¿½È´ï¿½deviceï¿½ï¿½Ó¦ */
+    WAIT_RESPONSE                   /* ï¿½È´ï¿½deviceï¿½ï¿½Ó¦ */
 };
 
 /*
@@ -248,24 +248,24 @@ typedef struct patch_globals
 }PATCH_GLOBALS_STUR;
 
 
-/* xmodemÃ¿°üÊý¾ÝµÄ½á¹¹£¬CRCÐ£Ñé*/
+/* xmodemÃ¿ï¿½ï¿½ï¿½ï¿½ï¿½ÝµÄ½á¹¹ï¿½ï¿½CRCÐ£ï¿½ï¿½*/
 typedef struct xmodem_crc_pkt
 {
-    int8  Head;                             /* ¿ªÊ¼×Ö·û */
-    int8  PacketNum;                        /* °üÐòºÅ */
-    int8  PacketAnt;                        /* °üÐòºÅ²¹Âë*/
-    int8  packet_data[XMODE_DATA_LEN];      /* Êý¾Ý */
-    int8  CRCValue_H;                       /* CRCÐ£ÑéÂë¸ßÎ» */
-    int8  CRCValue_L;                       /* CRCÐ£ÑéÂëµÍÎ» */
+    int8  Head;                             /* ï¿½ï¿½Ê¼ï¿½Ö·ï¿½ */
+    int8  PacketNum;                        /* ï¿½ï¿½ï¿½ï¿½ï¿½ */
+    int8  PacketAnt;                        /* ï¿½ï¿½ï¿½ï¿½Å²ï¿½ï¿½ï¿½*/
+    int8  packet_data[XMODE_DATA_LEN];      /* ï¿½ï¿½ï¿½ï¿½ */
+    int8  CRCValue_H;                       /* CRCÐ£ï¿½ï¿½ï¿½ï¿½ï¿½Î» */
+    int8  CRCValue_L;                       /* CRCÐ£ï¿½ï¿½ï¿½ï¿½ï¿½Î» */
 }XMODEM_CRC_PKT_STRU;
 
 
-/* xmodemÃ¿°üÊý¾ÝµÄ½á¹¹£¬CRCÐ£Ñé*/
+/* xmodemÃ¿ï¿½ï¿½ï¿½ï¿½ï¿½ÝµÄ½á¹¹ï¿½ï¿½CRCÐ£ï¿½ï¿½*/
 typedef struct xmodem_head_pkt
 {
-    int8  Head;                             /* ¿ªÊ¼×Ö·û */
-    int8  PacketNum;                        /* °üÐòºÅ */
-    int8  PacketAnt;                        /* °üÐòºÅ²¹Âë*/
+    int8  Head;                             /* ï¿½ï¿½Ê¼ï¿½Ö·ï¿½ */
+    int8  PacketNum;                        /* ï¿½ï¿½ï¿½ï¿½ï¿½ */
+    int8  PacketAnt;                        /* ï¿½ï¿½ï¿½ï¿½Å²ï¿½ï¿½ï¿½*/
 }XMODEM_HEAD_PKT_STRU;
 
 

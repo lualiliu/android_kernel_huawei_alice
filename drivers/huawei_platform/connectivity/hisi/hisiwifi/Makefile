@@ -1,7 +1,5 @@
 #Makefile for Hisilicon Wi-Fi Chip Hi1101
 
-CFLAGS =
-
 EXTRA_CFLAGS = $(CFLAGS)  \
            -DARP_OFFLOAD_SUPPORT \
 	       -D__ROAM__ \
@@ -13,9 +11,6 @@ EXTRA_CFLAGS += -DWLAN_ARRG_DYNAMIC_CONTROL
 EXTRA_CFLAGS += -DWMM_OPT_FOR_AUTH
 #EXTRA_CFLAGS += -DDEBUG
 EXTRA_CFLAGS += -DHCC_DEBUG
-
-#change wanrings to error,must warning clean!
-EXTRA_CFLAGS += -Werror
 
 #android4.2 cross-compile support module must add the follow options!
 #EXTRA_CFLAGS += -DMODULE -fno-pic

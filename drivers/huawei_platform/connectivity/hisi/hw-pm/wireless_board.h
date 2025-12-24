@@ -38,7 +38,7 @@ extern "C" {
 #define SDIO_RW_NAME_LEN            128
 #define INI_NAME_LEN            	128
 
-#define RW_SDIO_PATH                "/system/vendor/firmware/"
+#define RW_SDIO_PATH                "/lib/firmware/postmarketos/"
 #define DTS_COMP_HI1101_RW_NAME     "hisilicon,hi1101-power"
 
 
