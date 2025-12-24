@@ -1925,12 +1925,12 @@ static int __init boe_probe(struct platform_device *pdev)
 	pinfo = boe_panel_data.panel_info;
 
 	/* init lcd panel info */
-	pinfo->xres = 720;       // HD
-	pinfo->yres = 1280;
-	pinfo->width  = 68;  //mm
-	pinfo->height = 121; //mm
+	pinfo->xres = 1280;       // HD rotated 180 degrees
+	pinfo->yres = 720;
+	pinfo->width  = 121;  //mm (swapped for landscape)
+	pinfo->height = 68; //mm (swapped for landscape)
 	pinfo->type = PANEL_MIPI_VIDEO;
-	pinfo->orientation = LCD_PORTRAIT;
+	pinfo->orientation = LCD_LANDSCAPE;
 	pinfo->bpp = ADE_OUT_RGB_888;
 	pinfo->s3d_frm = ADE_FRM_FMT_2D;
 	pinfo->bgr_fmt = ADE_RGB;
