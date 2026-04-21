@@ -65,6 +65,7 @@
 
 #ifndef CONFIG_HI3635_USB
 extern struct hiusb_info *g_hiusb_info;
+extern int g_hiusb_force_host;
 #endif
 /*BEGIN PN:DTS2015111011171, Added by s00258714, 2015/11/10*/
 #ifdef CONFIG_HUAWEI_USB_OTGSWITCH
@@ -1317,7 +1318,11 @@ int dwc_otg_core_init(dwc_otg_core_if_t * core_if)
     /*BEGIN PN:DTS2015111011171, Added by s00258714, 2015/11/10*/
     #ifdef CONFIG_HUAWEI_USB_OTGSWITCH
     DWC_INFO("[USB_DEBUG]---op_state=%d,otg_enable=%d\n",core_if->op_state,g_otg_enable);
-    if(g_otg_enable == 0){
+    if (g_hiusb_force_host) {
+        DWC_INFO("[USB_DEBUG]%s,force host by hiusb_mode\n", __func__);
+        usbcfg.b.force_host_mode = 1;
+        usbcfg.b.force_dev_mode = 0;
+    } else if(g_otg_enable == 0){
         DWC_INFO("[USB_DEBUG]------devices\n");
         usbcfg.b.force_host_mode=0;
         usbcfg.b.force_dev_mode=1;

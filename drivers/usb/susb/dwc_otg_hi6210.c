@@ -115,6 +115,7 @@ int hisi_usb_id_change(enum otg_dev_event_type flag);
 static void release_wakelock_do_disconnect(struct lm_device *lm_dev);
 int use_switch_driver=0;
 int id_no_bypass=0;
+int g_hiusb_force_host = 0;
 
 /* BEGIN PN:DTS2014082908201, Added by s00258714, 2014/9/3*/
 #ifdef CONFIG_CHARGER_TYPE_RECHECK
@@ -415,12 +416,14 @@ STATIC ssize_t hiusb_mode_store(struct device *_dev,
         return -EINVAL;
 
     if (mode == HIUSB_HOST) {
+        g_hiusb_force_host = 1;
         if (hiusb_info->hiusb_status == HIUSB_DEVICE) {
             release_wakelock_do_disconnect(lm_dev);
             msleep(100);
         }
         hisi_usb_id_change(ID_FALL_EVENT);
     } else {
+        g_hiusb_force_host = 0;
         if (hiusb_info->hiusb_status == HIUSB_HOST) {
             hisi_usb_id_change(ID_RISE_EVENT);
             msleep(100);
