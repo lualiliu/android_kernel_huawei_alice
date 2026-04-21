@@ -110,6 +110,8 @@ MODULE_PARM_DESC(override_eyediagram,"Override HSUSB PHY eye diagram value Setti
  * Show the switch gpio status.
  */
 irqreturn_t hiusb_vbus_intr(int irq, void *dev);
+unsigned char vbus_status(void);
+int hisi_usb_id_change(enum otg_dev_event_type flag);
 int use_switch_driver=0;
 int id_no_bypass=0;
 
@@ -399,6 +401,50 @@ STATIC ssize_t hiusb_status_show(struct device *_dev,
 }
 DEVICE_ATTR(hiusb_status, S_IRUGO, hiusb_status_show, NULL);
 
+STATIC ssize_t hiusb_mode_store(struct device *_dev,
+                 struct device_attribute *attr,
+                 const char *buf, size_t count)
+{
+    struct lm_device *lm_dev = container_of(_dev, struct lm_device, dev);
+    struct hiusb_info *hiusb_info = lm_dev->hiusb_info;
+    long mode;
+
+    if ((strict_strtol(buf, 10, &mode) < 0) ||
+        (mode != HIUSB_DEVICE && mode != HIUSB_HOST))
+        return -EINVAL;
+
+    if (mode == HIUSB_HOST) {
+        if (hiusb_info->hiusb_status == HIUSB_DEVICE &&
+            hiusb_info->insert_irq != 0 && hiusb_info->draw_irq != 0) {
+            hiusb_vbus_intr(hiusb_info->draw_irq, lm_dev);
+            msleep(100);
+        }
+        hisi_usb_id_change(ID_FALL_EVENT);
+    } else {
+        if (hiusb_info->hiusb_status == HIUSB_HOST) {
+            hisi_usb_id_change(ID_RISE_EVENT);
+            msleep(100);
+        }
+        if ((vbus_status() != 0) &&
+            hiusb_info->insert_irq != 0 && hiusb_info->draw_irq != 0) {
+            hiusb_vbus_intr(hiusb_info->insert_irq, lm_dev);
+        }
+    }
+
+    return count;
+}
+
+STATIC ssize_t hiusb_mode_show(struct device *_dev,
+              struct device_attribute *attr, char *buf)
+{
+    struct lm_device *lm_dev = container_of(_dev, struct lm_device, dev);
+    struct hiusb_info *hiusb_info = lm_dev->hiusb_info;
+
+    return sprintf(buf, "%d\n", hiusb_info->hiusb_status == HIUSB_HOST ?
+                   HIUSB_HOST : HIUSB_DEVICE);
+}
+DEVICE_ATTR(hiusb_mode, (S_IRUGO | S_IWUSR), hiusb_mode_show, hiusb_mode_store);
+
 /**
  * Store the test_vbus_store attribure.
  */
@@ -563,6 +609,7 @@ void hiusb_attr_create(struct lm_device *lm_dev)
 
     error = device_create_file(&lm_dev->dev, &dev_attr_charger);
     error = device_create_file(&lm_dev->dev, &dev_attr_hiusb_status);
+    error = device_create_file(&lm_dev->dev, &dev_attr_hiusb_mode);
     error = device_create_file(&lm_dev->dev, &dev_attr_test_vbus);
     error = device_create_file(&lm_dev->dev, &dev_attr_test_id);
     error = device_create_file(&lm_dev->dev, &dev_attr_test_hibernation);
@@ -573,6 +620,7 @@ void hiusb_attr_remove(struct lm_device *lm_dev)
 {
     device_remove_file(&lm_dev->dev, &dev_attr_charger);
     device_remove_file(&lm_dev->dev, &dev_attr_hiusb_status);
+    device_remove_file(&lm_dev->dev, &dev_attr_hiusb_mode);
     device_remove_file(&lm_dev->dev, &dev_attr_test_vbus);
     device_remove_file(&lm_dev->dev, &dev_attr_test_id);
     device_remove_file(&lm_dev->dev, &dev_attr_test_hibernation);
@@ -1343,7 +1391,16 @@ STATIC void hiusb_otg_intr_work(struct work_struct *work)
                 schedule_delayed_work(&hiusb_info->otg_intr_work, 0);
                 break;
             }
-            if (hiusb_info->hiusb_status != HIUSB_OFF ) {
+            if (hiusb_info->hiusb_status == HIUSB_HOST) {
+                if (hiusb_info->vbus_pin) {
+                    gpio_direction_output(hiusb_info->vbus_pin, 0);
+                }
+                if (hiusb_info->quirks & HIUSB_QUIRKS_CHARGER) {
+                    hiusb_info->charger_type = detect_charger_type();
+                    notify_charger_type();
+                }
+                break;
+            } else if (hiusb_info->hiusb_status != HIUSB_OFF ) {
                 dev_err(&lm_dev->dev, "%s charge INSERT wrong status error:(%d)%s.\n",
                     __func__, hiusb_info->hiusb_status, hiusb_info->hiusb_status <= HIUSB_MAX_STATUS ? usb_status[hiusb_info->hiusb_status]:"error");
                 /* DTS2013062801562 */
@@ -1394,7 +1451,16 @@ STATIC void hiusb_otg_intr_work(struct work_struct *work)
                 schedule_delayed_work(&hiusb_info->otg_intr_work, 0);
                 break;
             }
-            if (hiusb_info->hiusb_status != HIUSB_DEVICE) {
+            if (hiusb_info->hiusb_status == HIUSB_HOST) {
+                if (hiusb_info->vbus_pin) {
+                    gpio_direction_output(hiusb_info->vbus_pin, 1);
+                }
+                if (hiusb_info->quirks & HIUSB_QUIRKS_CHARGER) {
+                    hiusb_info->charger_type = USB_EVENT_OTG_ID;
+                    notify_charger_type();
+                }
+                break;
+            } else if (hiusb_info->hiusb_status != HIUSB_DEVICE) {
                 dev_err(&lm_dev->dev, "%s charge DRAW wrong status error:(%d)%s.\n",
                     __func__, hiusb_info->hiusb_status, hiusb_info->hiusb_status <= HIUSB_MAX_STATUS ? usb_status[hiusb_info->hiusb_status]:"error");
                 /* DTS2013062801562 */
@@ -1431,13 +1497,6 @@ STATIC void hiusb_otg_intr_work(struct work_struct *work)
             break;
         case ID_FALL_EVENT:
             /* < DTS2015111011171 s00258714 20151110 begin */
-            #ifdef CONFIG_HUAWEI_USB_OTGSWITCH
-            if(vbus_status() != 0)
-            {
-                dev_err(&lm_dev->dev, "%s the vbus pin has pullup!\n",__func__);
-                break;
-            }
-            #endif
             /*DTS2015111011171 s00258714 20151110 end  >*/
             if (hiusb_info->hiusb_status != HIUSB_OFF) {
                 dev_err(&lm_dev->dev, "%s ID_FALL in wrong status error:(%d)%s.\n",
@@ -1452,7 +1511,7 @@ STATIC void hiusb_otg_intr_work(struct work_struct *work)
 
             wake_lock(&hiusb_info->host_wakelock);
             if (hiusb_info->vbus_pin) {
-                gpio_direction_output(hiusb_info->vbus_pin, 1);
+                gpio_direction_output(hiusb_info->vbus_pin, vbus_status() ? 0 : 1);
             }
             hiusb_otg_and_phy_setup(1);
             if(0 == dwc_host_insert_init(lm_dev)){
@@ -1523,13 +1582,6 @@ int hisi_usb_id_change(enum otg_dev_event_type flag)
         return -EINVAL;
     }
 /* < DTS2015111011171 s00258714 20151110 begin */
-#ifdef CONFIG_HUAWEI_USB_OTGSWITCH
-    if(vbus_status())
-    {
-        pr_err("[USB_DEBUG]%s: ID INTR but vbus is on!\n", __func__);
-        return -EINVAL;
-    }
-#endif
     pr_info("[USB_DEBUG]%s +.\n", __func__);
 /*DTS2015111011171 s00258714 20151110 end  >*/
     hiusb_info = g_hiusb_info;
@@ -1863,15 +1915,6 @@ STATIC int hiusb_init_phase2(struct lm_device *dev)
             }
             hiusb_info->hiusb_status = HIUSB_OFF;
         }
-    } else if ((pmu_version() != 0) && (vbus_status() == 0)) {
-        dev_info(&dev->dev, "usb disconnect!\n");
-        hiusb_otg_and_phy_cleanup();
-        wake_unlock(&hiusb_info->dev_wakelock);
-        if (hiusb_info->quirks & HIUSB_QUIRKS_CHARGER) {
-            hiusb_info->charger_type = CHARGER_REMOVED;
-            notify_charger_type();
-        }
-        hiusb_info->hiusb_status = HIUSB_OFF;
     } else {
         hiusb_info->hiusb_status = HIUSB_DEVICE;
         dwc_pm_runtime_disable(lm_dev);
