@@ -112,6 +112,7 @@ MODULE_PARM_DESC(override_eyediagram,"Override HSUSB PHY eye diagram value Setti
 irqreturn_t hiusb_vbus_intr(int irq, void *dev);
 unsigned char vbus_status(void);
 int hisi_usb_id_change(enum otg_dev_event_type flag);
+static void release_wakelock_do_disconnect(struct lm_device *lm_dev);
 int use_switch_driver=0;
 int id_no_bypass=0;
 
@@ -414,9 +415,8 @@ STATIC ssize_t hiusb_mode_store(struct device *_dev,
         return -EINVAL;
 
     if (mode == HIUSB_HOST) {
-        if (hiusb_info->hiusb_status == HIUSB_DEVICE &&
-            hiusb_info->insert_irq != 0 && hiusb_info->draw_irq != 0) {
-            hiusb_vbus_intr(hiusb_info->draw_irq, lm_dev);
+        if (hiusb_info->hiusb_status == HIUSB_DEVICE) {
+            release_wakelock_do_disconnect(lm_dev);
             msleep(100);
         }
         hisi_usb_id_change(ID_FALL_EVENT);
