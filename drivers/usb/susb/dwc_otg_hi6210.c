@@ -119,7 +119,7 @@ int g_hiusb_force_host = 0;
 
 /* BEGIN PN:DTS2014082908201, Added by s00258714, 2014/9/3*/
 #ifdef CONFIG_CHARGER_TYPE_RECHECK
-// ²åÈë³äµçÆ÷±»Ê¶±ðÎªUSB±êÖ¾Î»£¬µ±ÐèÒª½øÒ»²½È·ÈÏ±êÖ¾Î»Îª0£¬ÒÑÈ·ÈÏÀàÐÍÔòÎª1
+// æ’å…¥å……ç”µå™¨è¢«è¯†åˆ«ä¸ºUSBæ ‡å¿—ä½ï¼Œå½“éœ€è¦è¿›ä¸€æ­¥ç¡®è®¤æ ‡å¿—ä½ä¸º0ï¼Œå·²ç¡®è®¤ç±»åž‹åˆ™ä¸º1
 int g_charger_usb_checked = 0;
 
 int getChargerUsbState(void)
@@ -1399,7 +1399,11 @@ STATIC void hiusb_otg_intr_work(struct work_struct *work)
                     gpio_direction_output(hiusb_info->vbus_pin, 0);
                 }
                 if (hiusb_info->quirks & HIUSB_QUIRKS_CHARGER) {
-                    hiusb_info->charger_type = detect_charger_type();
+                    /*
+                     * In forced host mode with external VBUS present, always
+                     * report USB charging type to drive battery status.
+                     */
+                    hiusb_info->charger_type = CHARGER_TYPE_USB;
                     notify_charger_type();
                 }
                 break;

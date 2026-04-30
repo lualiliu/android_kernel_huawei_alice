@@ -893,6 +893,14 @@ static int bq_bci_battery_get_property(struct power_supply *psy,
     switch (psp) {
     case POWER_SUPPLY_PROP_STATUS:
         val->intval = di->charge_status;
+        di->bat_current = hisi_battery_current();
+        if (COUL_SMARTSTAR == hisi_coulometer_type()) {
+            di->bat_current = -(di->bat_current);
+        }
+        if (di->bat_current < 0 &&
+            val->intval != POWER_SUPPLY_STATUS_FULL) {
+            val->intval = POWER_SUPPLY_STATUS_CHARGING;
+        }
         break;
     case POWER_SUPPLY_PROP_VOLTAGE_NOW:
         di->bat_voltage = hisi_battery_voltage();
